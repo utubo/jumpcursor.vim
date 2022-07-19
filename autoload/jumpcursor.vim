@@ -13,6 +13,19 @@ else
   let s:popupwin_line = 0
 endif
 
+function! s:popup_marks(what, wl, wc) abort
+  let id = popup_create(a:what, {
+        \ 'line': printf('cursor%+d', (a:wl - line('.'))),
+        \ 'col': printf('cursor%+d', a:wc - virtcol('.')),
+        \ 'wrap': &wrap,
+        \ 'maxwidth': winwidth('.'),
+        \ 'maxheight': winheight('.'),
+        \ 'highlight': 'Error',
+        \ })
+  call win_execute(id, 'setl tabstop=' . &tabstop)
+  return id
+endfunction
+
 function! s:fill_window() abort
   let start_line = line('w0')
   let end_line = line('w$')
@@ -24,7 +37,7 @@ function! s:fill_window() abort
   let mark_idx = 0
 
   if ! has('nvim')
-    let mark_text = []
+    let marked_text = []
   endif
 
   while start_line <= end_line
@@ -33,39 +46,29 @@ function! s:fill_window() abort
     endif
     let text = getline(start_line)
     let mark = g:jumpcursor_marks[mark_idx]
-    if ! has('nvim')
-      call add(mark_text, '')
-    endif
-    for i in range(len(text))
-      " skip blank
-      if text[i] ==# ' ' || text[i] ==# "\t"
-        if ! has('nvim')
-          let mark_text[-1] .= text[i]
+    if has('nvim')
+      for i in range(len(text))
+        " skip blank
+        if text[i] ==# ' ' || text[i] ==# "\t"
+          continue
         endif
-        continue
-      endif
-      if has('nvim')
         call nvim_buf_set_extmark(bufnr, s:jumpcursor_ns, start_line-1, i, {
               \ 'virt_text_pos': 'overlay',
               \ 'virt_text':
               \ [
                 \ [mark, 'ErrorMsg']
               \ ]})
-      else
-        let mark_text[-1] .= mark
-      endif
-      call add(linecols, [start_line-1, i])
-    endfor
+        call add(linecols, [start_line-1, i])
+      endfor
+    else
+      call add(marked_text, substitute(text, '\(\S\)', { m -> repeat(mark, strdisplaywidth(m[1])) }, 'g'))
+    endif
     let s:jumpcursor_mark_lnums[mark] = start_line
     let mark_idx += 1
     let start_line += 1
   endwhile
   if ! has('nvim')
-    let s:popupwin_fill = popup_create(mark_text, {
-          \ 'line': 'cursor-' . line('.'),
-          \ 'col': 'cursor-' . (col('.') - 1),
-          \ 'highlight': 'Error',
-          \ })
+    let s:popupwin_fill = s:popup_marks(marked_text, line('w0'), 1)
   endif
 endfunction
 
@@ -76,22 +79,25 @@ function! s:fill_specific_line(lnum) abort
   let mark_len = len(g:jumpcursor_marks)
 
   if ! has('nvim')
-    let mark_text = ''
+    let marked_text = ''
   endif
 
-  for i in range(len(text))
+  let i = 0
+  for c in split(text, '\zs')
     if mark_idx >= mark_len
       break
     endif
 
-    if text[i] ==# ' ' || text[i] ==# "\t"
+    if c ==# ' ' || c ==# "\t"
       if ! has('nvim')
-        let mark_text .= text[i]
+        let marked_text .= c
       endif
+      let i += len(c)
       continue
     endif
 
     let mark = g:jumpcursor_marks[mark_idx]
+    let mark_dsp = repeat(mark, strdisplaywidth(c))
     let mark_idx += 1
 
     if has('nvim')
@@ -99,20 +105,17 @@ function! s:fill_specific_line(lnum) abort
             \ 'virt_text_pos': 'overlay',
             \ 'virt_text':
             \ [
-              \ [mark, 'ErrorMsg']
+              \ [mark_dsp, 'ErrorMsg']
             \ ]})
     else
-      let mark_text .= mark
+      let marked_text .= mark_dsp
     endif
 
     let s:jumpcursor_mark_cols[mark] = i
+    let i += len(c)
   endfor
   if ! has('nvim')
-    let s:popupwin_line = popup_create(mark_text, {
-          \ 'line': printf('cursor%+d', (a:lnum - line('.'))),
-          \ 'col': printf('cursor%+d', 1 - col('.')),
-          \ 'highlight': 'Error',
-          \ })
+    let s:popupwin_line = s:popup_marks(marked_text, a:lnum, 1)
   endif
   redraw!
 endfunction
