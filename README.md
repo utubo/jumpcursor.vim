@@ -9,8 +9,9 @@ The key concept of this plugin is that you can move cursor anywhere you want wit
 ![cursor_jump](https://user-images.githubusercontent.com/7888591/151286736-3e0e7db6-203d-419f-b557-d2d4a4523951.gif)
 
 ## NOTE
-This plugin only support Neovim.  
-But if this experiment is good for me, I'll support Vim.
+~~This plugin only support Neovim.~~  
+~~But if this experiment is good for me, I'll support Vim.~~  
+This fork supports Vim.
 
 ## Usage
 Please add your own mapping and use it.  
