@@ -44,6 +44,15 @@ function! s:fill_window() abort
     if mark_idx >= mark_len
       break
     endif
+    if foldclosed(start_line) !=# -1
+      if ! has('nvim')
+        if start_line ==# foldclosedend(start_line)
+          call add(marked_text, foldtextresult(start_line))
+        endif
+      endif
+      let start_line += 1
+      continue
+    endif
     let text = getline(start_line)
     let mark = g:jumpcursor_marks[mark_idx]
     if has('nvim')
