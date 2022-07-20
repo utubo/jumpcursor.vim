@@ -70,11 +70,9 @@ function! s:fill_window() abort
     endif
     if foldclosed(start_line) !=# -1
       if ! has('nvim')
-        if start_line ==# foldclosedend(start_line)
-          call add(marked_text, foldtextresult(start_line))
-        endif
+        call add(marked_text, foldtextresult(start_line))
       endif
-      let start_line += 1
+      let start_line = foldclosedend(start_line) + 1
       continue
     endif
     let text = getline(start_line)
