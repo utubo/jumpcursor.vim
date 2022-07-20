@@ -14,15 +14,39 @@ else
 endif
 
 function! s:popup_marks(what, wl, wc) abort
+  let savepos = getpos('.')
+  normal! 0
+  let line_d = 0
+  while line('.') !=# a:wl || col('.') != 1
+    if line('.') < a:wl
+      normal! gj
+      let line_d += 1
+    else
+      normal! gk
+      let line_d -= 1
+    endif
+  endwhile
+  let save_ve = &virtualedit
+  set virtualedit=block
+  execute "normal! \<C-v>g$"
+  let width = virtcol('.')
+  if ! &wrap
+    let width -= 1
+  endif
+  execute "normal! \<ESC>"
+  let &virtualedit = save_ve
+  call setpos('.', savepos)
   let id = popup_create(a:what, {
-        \ 'line': printf('cursor%+d', (a:wl - line('.'))),
+        \ 'line': printf('cursor%+d', line_d),
         \ 'col': printf('cursor%+d', a:wc - virtcol('.')),
         \ 'wrap': &wrap,
-        \ 'maxwidth': winwidth('.'),
+        \ 'minwidth': width,
+        \ 'maxwidth': width,
         \ 'maxheight': winheight('.'),
         \ 'highlight': 'Error',
         \ })
   call win_execute(id, 'setl tabstop=' . &tabstop)
+  call win_execute(id, 'setl ' . (&breakindent ? '' : 'no') . 'breakindent')
   return id
 endfunction
 
