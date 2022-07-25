@@ -12,32 +12,21 @@ else
   let s:popupwin = 0
 endif
 
-function! s:popup_marks(what, wl, wc) abort
-  let savepos = getpos('.')
-  normal! 0
-  let line_d = 0
-  while line('.') !=# a:wl || col('.') != 1
-    if line('.') < a:wl
-      normal! gj
-      let line_d += 1
-    else
-      normal! gk
-      let line_d -= 1
-    endif
-  endwhile
+function! s:popup_marks(what, lnum) abort
+  let save_pos = getpos('.')
+  call setpos('.', [0, a:lnum, 1, 0])
+  let wlnum = winline()
+  let wleft = wincol()
   let save_ve = &virtualedit
   set virtualedit=block
   execute "normal! \<C-v>g$"
-  let width = virtcol('.')
-  if ! &wrap
-    let width -= 1
-  endif
+  let width = wincol() - wleft + 1
   execute "normal! \<ESC>"
   let &virtualedit = save_ve
-  call setpos('.', savepos)
+  call setpos('.', save_pos)
   let s:popupwin = popup_create(a:what, {
-        \ 'line': printf('cursor%+d', line_d),
-        \ 'col': printf('cursor%+d', a:wc - virtcol('.')),
+        \ 'line': printf('cursor%+d', wlnum - winline()),
+        \ 'col': printf('cursor%+d', wleft - wincol()),
         \ 'wrap': &wrap,
         \ 'minwidth': width,
         \ 'maxwidth': width,
@@ -97,7 +86,7 @@ function! s:fill_window() abort
     let start_line += 1
   endwhile
   if ! has('nvim')
-    call s:popup_marks(marked_text, line('w0'), 1)
+    call s:popup_marks(marked_text, line('w0'))
   endif
 endfunction
 
@@ -144,7 +133,7 @@ function! s:fill_specific_line(lnum) abort
     let i += len(c)
   endfor
   if ! has('nvim')
-     call s:popup_marks(marked_text, a:lnum, 1)
+     call s:popup_marks(marked_text, a:lnum)
   endif
   redraw!
 endfunction
