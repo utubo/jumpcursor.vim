@@ -21,6 +21,9 @@ function! s:popup_marks(what, lnum) abort
   set virtualedit=block
   execute "normal! \<C-v>g$"
   let width = wincol() - wleft + 1
+  if ! &wrap
+    let width -= 1
+  endif
   execute "normal! \<ESC>"
   let &virtualedit = save_ve
   call setpos('.', save_pos)
