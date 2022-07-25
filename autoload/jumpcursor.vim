@@ -9,8 +9,7 @@ let s:jumpcursor_mark_cols = {}
 if has('nvim')
   let s:jumpcursor_ns = nvim_create_namespace('jumpcursor')
 else
-  let s:popupwin_fill = 0
-  let s:popupwin_line = 0
+  let s:popupwin = 0
 endif
 
 function! s:popup_marks(what, wl, wc) abort
@@ -36,7 +35,7 @@ function! s:popup_marks(what, wl, wc) abort
   execute "normal! \<ESC>"
   let &virtualedit = save_ve
   call setpos('.', savepos)
-  let id = popup_create(a:what, {
+  let s:popupwin = popup_create(a:what, {
         \ 'line': printf('cursor%+d', line_d),
         \ 'col': printf('cursor%+d', a:wc - virtcol('.')),
         \ 'wrap': &wrap,
@@ -45,9 +44,8 @@ function! s:popup_marks(what, wl, wc) abort
         \ 'maxheight': winheight('.'),
         \ 'highlight': 'Error',
         \ })
-  call win_execute(id, 'setl tabstop=' . &tabstop)
-  call win_execute(id, 'setl ' . (&breakindent ? '' : 'no') . 'breakindent')
-  return id
+  call win_execute(s:popupwin, 'setl ' . trim(execute('set tabstop?')))
+  call win_execute(s:popupwin, 'setl ' . trim(execute('set breakindent?')))
 endfunction
 
 function! s:fill_window() abort
@@ -99,7 +97,7 @@ function! s:fill_window() abort
     let start_line += 1
   endwhile
   if ! has('nvim')
-    let s:popupwin_fill = s:popup_marks(marked_text, line('w0'), 1)
+    call s:popup_marks(marked_text, line('w0'), 1)
   endif
 endfunction
 
@@ -146,7 +144,7 @@ function! s:fill_specific_line(lnum) abort
     let i += len(c)
   endfor
   if ! has('nvim')
-    let s:popupwin_line = s:popup_marks(marked_text, a:lnum, 1)
+     call s:popup_marks(marked_text, a:lnum, 1)
   endif
   redraw!
 endfunction
@@ -185,13 +183,9 @@ function! s:jump_cursor_clear() abort
   if has('nvim')
     call nvim_buf_clear_namespace(bufnr(), s:jumpcursor_ns, line('w0')-1, line('w$'))
   else
-    if s:popupwin_fill
-      call popup_close(s:popupwin_fill)
-      let s:popupwin_fill = 0
-    endif
-    if s:popupwin_line
-      call popup_close(s:popupwin_line)
-      let s:popupwin_line = 0
+    if s:popupwin
+      call popup_close(s:popupwin)
+      let s:popupwin = 0
     endif
   endif
 endfunction
