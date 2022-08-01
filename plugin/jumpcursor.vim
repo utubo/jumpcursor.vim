@@ -7,4 +7,4 @@ if exists('loaded_jumpcursor')
 endif
 let g:loaded_jumpcursor = 1
 
-nnoremap <silent> <Plug>(jumpcursor-jump) :call jumpcursor#jump()<CR>
+nnoremap <Plug>(jumpcursor-jump) <Cmd>call jumpcursor#jump()<CR>
